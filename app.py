@@ -1,4 +1,3 @@
-# (スタジオパネルに作成された app-v2.py と同一のコードがここに書き込まれます)
 import json
 import os
 import re
