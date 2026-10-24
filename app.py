@@ -13,7 +13,7 @@ import streamlit as st
 # 設定 & 定数
 # =====================================================================
 st.set_page_config(
-    page_title="法令チェック ＆ AI添削システム",
+    page_title="e-Gov直結 法令整合性チェッカー",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -114,7 +114,7 @@ def call_gemini_api(
                     "⚠️ **【通信タイムアウト（応答待ち時間超過）】**\n\n"
                     "AIサーバーまたは国の法令データベースとの通信が混雑等のため時間内に完了しませんでした。\n\n"
                     "**【対処法】**\n"
-                    "1. お手数ですが、**もう一度「🔍 法令監査を実行」ボタンを押して再試行**してください（通常は2度目で正常に完了します）。\n"
+                    "1. お手数ですが、**もう一度「🔍 法令チェックを実行」ボタンを押して再試行**してください（通常は2度目で正常に完了します）。\n"
                     "2. 解消しない場合は、チェック対象の文章を論点ごとに少し短く分けて入力してみてください。",
                     None
                 )
@@ -136,17 +136,16 @@ class EGovLawAPIClient:
             params = {}
         if "response_format" not in params:
             params["response_format"] = "json"
-
         filtered_params = {k: v for k, v in params.items() if v is not None}
         if filtered_params:
-            query = urllib.parse.urlencode(filtered_params)
-            url = f"{url}?{query}"
+            url = f"{url}?{urllib.parse.urlencode(filtered_params)}"
 
         req = urllib.request.Request(
-            url, headers={"User-Agent": "EGovLawCheckerApp/1.0"}
+            url,
+            headers={"User-Agent": "EGovLawCheckerApp/1.0"}
         )
         try:
-            with urllib.request.urlopen(req, timeout=25) as res:
+            with urllib.request.urlopen(req, timeout=20) as res:
                 return res.read()
         except urllib.error.HTTPError as e:
             if e.code == 404:
@@ -166,14 +165,14 @@ class EGovLawAPIClient:
         raw = self._get("/laws", params=params)
         try:
             return json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError:
+        except Exception:
             return {"raw_xml": raw.decode("utf-8")}
 
     def search_keyword(self, keyword: str) -> Dict[str, Any]:
         raw = self._get("/keyword", params={"keyword": keyword})
         try:
             return json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError:
+        except Exception:
             return {"raw_xml": raw.decode("utf-8")}
 
     def find_law(self, law_name: str) -> Optional[Dict[str, Any]]:
@@ -183,8 +182,8 @@ class EGovLawAPIClient:
             for item in law_list:
                 rev_info = item.get("revision_info", {})
                 law_info = item.get("law_info", {})
-                t = rev_info.get("law_title") or law_info.get("law_title")
-                if t == law_name:
+                title = rev_info.get("law_title") or law_info.get("law_title")
+                if title == law_name:
                     return item
             if law_list:
                 return get_first(law_list)
@@ -195,62 +194,54 @@ class EGovLawAPIClient:
             for item in item_list:
                 rev_info = item.get("revision_info", {})
                 law_info = item.get("law_info", {})
-                t = rev_info.get("law_title") or law_info.get("law_title")
-                if t == law_name:
+                title = rev_info.get("law_title") or law_info.get("law_title")
+                if title == law_name:
                     return item
             if item_list:
                 return get_first(item_list)
-
         return None
 
     def get_law_revisions(self, law_id_or_num: str) -> Dict[str, Any]:
-        endpoint = f"/law_revisions/{urllib.parse.quote(law_id_or_num)}"
-        raw = self._get(endpoint)
+        raw = self._get(f"/law_revisions/{urllib.parse.quote(law_id_or_num)}")
         try:
             return json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError:
+        except Exception:
             return {"raw_xml": raw.decode("utf-8")}
 
-    def get_law_data(self, law_id_or_num_or_revision_id: str, response_format: str = "xml") -> str:
-        endpoint = f"/law_data/{urllib.parse.quote(law_id_or_num_or_revision_id)}"
-        raw = self._get(endpoint, params={"response_format": response_format})
+    def get_law_data(self, law_id: str) -> str:
+        raw = self._get(f"/law_data/{urllib.parse.quote(law_id)}", params={"response_format": "xml"})
         return raw.decode("utf-8")
 
     def parse_amendment_status(self, revision_info: Dict[str, Any]) -> Dict[str, Any]:
         amendment_type = str(revision_info.get("amendment_type", ""))
         repeal_status = str(revision_info.get("repeal_status", ""))
-
-        is_repealed = amendment_type == "8" or repeal_status in [
-            "Repeal", "Expire", "LossOfEffectiveness"
-        ]
+        is_repealed = amendment_type == "8" or repeal_status in ["Repeal", "Expire", "LossOfEffectiveness"]
         status_text = "廃止・失効" if is_repealed else "現行・有効"
         return {"status_text": status_text, "is_repealed": is_repealed}
 
 
-# --- 3. 条文抽出 & 正規化 ---
+# --- 3. 条文番号の正規化 ＆ XMLパース ---
 def normalize_article_num(raw_str: str) -> str:
     s = re.sub(r'[第条\s]', '', raw_str)
-    table = str.maketrans('０１２３４５６７８９', '0123456789')
-    s = s.translate(table)
+    s = s.translate(str.maketrans('０１２３４５６７８９', '0123456789'))
     if s.isdigit():
         return str(int(s))
-
     kanji_digits = {'〇': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
     total = 0
-    cur = 0
+    current = 0
     for char in s:
         if char in kanji_digits:
-            cur = kanji_digits[char]
+            current = kanji_digits[char]
         elif char == '十':
-            total += (cur if cur != 0 else 1) * 10
-            cur = 0
+            total += (current if current != 0 else 1) * 10
+            current = 0
         elif char == '百':
-            total += (cur if cur != 0 else 1) * 100
-            cur = 0
+            total += (current if current != 0 else 1) * 100
+            current = 0
         elif char == '千':
-            total += (cur if cur != 0 else 1) * 1000
-            cur = 0
-    total += cur
+            total += (current if current != 0 else 1) * 1000
+            current = 0
+    total += current
     return str(total) if total > 0 else s
 
 
@@ -259,22 +250,25 @@ def extract_article_from_xml(xml_content: str, article_str: str) -> Dict[str, An
     try:
         root = ET.fromstring(xml_content)
     except Exception as e:
-        return {"found": False, "error": f"XML解析エラー: {e}"}
+        return {"found": False, "error": f"XMLパースエラー: {e}"}
 
     articles = root.findall(f".//Article[@Num='{target_num}']")
     if not articles:
         for a in root.findall(".//Article"):
-            t = a.find("ArticleTitle")
-            if t is not None and t.text and (article_str in t.text or f"{target_num}条" in t.text):
-                articles.append(a)
-                break
+            title_el = a.find("ArticleTitle")
+            if title_el is not None and title_el.text:
+                if article_str in title_el.text or f"{target_num}条" in title_el.text:
+                    articles.append(a)
+                    break
 
     if not articles:
         return {"found": False, "error": f"条文（{article_str}）は見つかりませんでした。"}
 
     target = get_first(articles)
-    caption = target.findtext("ArticleCaption", default="").strip()
-    title = target.findtext("ArticleTitle", default="").strip()
+    caption_el = target.find("ArticleCaption")
+    title_el = target.find("ArticleTitle")
+    caption = caption_el.text.strip() if caption_el is not None and caption_el.text else ""
+    title = title_el.text.strip() if title_el is not None and title_el.text else ""
 
     paragraphs = []
     for p in target.findall(".//Paragraph"):
@@ -522,29 +516,63 @@ def main():
             )
         st.caption("Powered by e-Gov API v2 & Gemini 3.8 Flash (0円完全無料枠運用対応)")
 
-    # メイン画面ヘッダー
+    # スタイリッシュなCSSインジェクション（カスタムデザイン＆ボタン改善）
     st.markdown(
-        "<div style='background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 22px 26px; border-radius: 12px; color: white; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);'>"
-        "<h2 style='margin:0 0 8px 0; color:white; font-size: 26px;'>⚖️ 法令チェック ＆ AI添削システム</h2>"
-        "<p style='margin:0; font-size:14px; opacity:0.95; line-height: 1.6;'>記事、社内規程、法務相談、広報文などを国の公式条文と自動照合。条・項・号まで特定し、エビデンス付きの改善案を作成します。</p>"
-        "</div>",
+        """
+        <style>
+        /* ボタンの視認性とデザイン向上（文字切れ防止） */
+        div.stButton > button:first-child {
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 12px 28px;
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            transition: all 0.2s ease-in-out;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        div.stButton > button:first-child:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+            transform: translateY(-1px);
+        }
+        /* テキストエリアとセレクトボックスの微細な装飾 */
+        div[data-baseweb="textarea"] {
+            border-radius: 8px;
+        }
+        </style>
+        """,
         unsafe_allow_html=True
     )
 
-    # ⚠️ 【最重要】非弁行為対策・法的ガードレール（目立つバナーカード）
+    # 🏛️ スタイリッシュなメインヘッダー（バッジ・大見出し・中見出し・説明文）
     st.markdown(
         """
-        <div style="background-color: #fffbeb; border: 2px solid #f59e0b; border-left: 8px solid #d97706; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 20px; margin-right: 8px;">⚠️</span>
-                <strong style="color: #92400e; font-size: 15px; letter-spacing: 0.5px;">【重要・法的ガードレール】ご利用にあたっての注意事項・免責事項</strong>
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e293b 100%); padding: 26px 30px; border-radius: 14px; color: white; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <!-- 上部バッジ -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
+                <span style="background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.25); color: #f8fafc; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.3px;">
+                    🏛️ デジタル庁 e-Gov 法令API v2 直結
+                </span>
+                <span style="background: rgba(56, 189, 248, 0.15); backdrop-filter: blur(4px); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.3px;">
+                    🛡️ ハルシネーション防止設計
+                </span>
             </div>
-            <div style="font-size: 13px; color: #78350f; line-height: 1.65;">
-                <ul style="margin: 0; padding-left: 20px;">
-                    <li><b>非弁行為（弁護士法第72条）の防止</b>：本システムは国が提供する「e-Gov法令API」の公式条文データおよび公開指針等に基づき、入力文章と法令との形式的・一般的な整合性を機械的に照合・添削支援する<b>情報提供・業務補助ツール</b>です。個別具体的な事案に対する法的判断（法的鑑定・助言）、紛争処理、交渉等の法律事務を取り扱うものではなく、弁護士法第72条に抵触する一切の行為を行いません。</li>
-                    <li><b>有資格専門家への相談</b>：AIによる出力結果は法的助言ではなく、その完全性・個別妥当性を法的に保証するものではありません。契約締結、就業規則・社内規程の改定、M&A、労使紛争対応等の最終的な判断・意思決定にあたっては、<b>必ず弁護士・社会保険労務士等の有資格専門家にご相談の上、ご自身の責任においてご判断ください。</b></li>
-                </ul>
+            <!-- 大見出し -->
+            <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">
+                ⚖️ e-Gov直結 法令整合性チェッカー
+            </h1>
+            <!-- 中見出し -->
+            <div style="color: #93c5fd; font-size: 15px; font-weight: 600; margin-bottom: 12px; letter-spacing: 0.2px;">
+                確定法令とAIの推論を峻別する、次世代の法令検証エンジン。
             </div>
+            <!-- 説明文 -->
+            <p style="margin: 0; font-size: 13.5px; color: #e2e8f0; line-height: 1.65; opacity: 0.95;">
+                法規制の内容を含む記事や社内規程等のドラフトを、国の公式法令データベースとリアルタイム照合。経過措置や政省令まで見落とさずチェックし、そのまま使える安全な表現へブラッシュアップします。
+            </p>
         </div>
         """,
         unsafe_allow_html=True
@@ -578,9 +606,10 @@ def main():
         placeholder="例: 労基法36条では時間外労働は何時間でも無制限に行ってよいとされている..."
     )
 
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        execute_btn = st.button("🔍 法令監査を実行", type="primary", use_container_width=True)
+    # 実行ボタン（文字切れを完全防止し、十分な幅と存在感を確保）
+    col_btn, col_space = st.columns([2, 3])
+    with col_btn:
+        execute_btn = st.button("🔍 法令チェックを実行", type="primary", use_container_width=True)
 
     if execute_btn:
         if not effective_api_key:
@@ -688,7 +717,7 @@ def main():
 
             st.write("🤖 **[Step 3/3]** Gemini 3.8 Flash が公式条文と照合・添削中...")
             report = audit_with_gemini(effective_api_key, user_text, evidences, tracker)
-            status_box.update(label="🎉 法令監査が完了しました！", state="complete", expanded=False)
+            status_box.update(label="🎉 法令チェックが完了しました！", state="complete", expanded=False)
 
         # レポート表示エリア
         st.markdown("### 📋 法令チェック・指摘フィードバックレポート")
@@ -713,11 +742,32 @@ def main():
         with tab_stats:
             st.info(tracker.summary())
 
+    # ⚠️ 【法的ガードレール】非弁行為対策・免責事項（最下部に配置）
+    st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-left: 6px solid #d97706; padding: 18px 22px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 18px; margin-right: 8px;">⚠️</span>
+                <strong style="color: #92400e; font-size: 14.5px; letter-spacing: 0.3px;">【法的ガードレール】ご利用にあたっての注意事項・免責事項</strong>
+            </div>
+            <div style="font-size: 12.8px; color: #78350f; line-height: 1.65;">
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><b>非弁行為（弁護士法第72条）の防止</b>：本システムは国が提供する「e-Gov法令API」の公式条文データおよび公開指針等に基づき、入力文章と法令との形式的・一般的な整合性を機械的に照合・添削支援する<b>情報提供・業務補助ツール</b>です。個別具体的な事案に対する法的判断（法的鑑定・助言）、紛争処理、交渉等の法律事務を取り扱うものではなく、弁護士法第72条に抵触する一切の行為を行いません。</li>
+                    <li><b>有資格専門家への相談</b>：AIによる出力結果は法的助言ではなく、その完全性・個別妥当性を法的に保証するものではありません。契約締結、就業規則・社内規程の改定、M&A、労使紛争対応等の最終的な判断・意思決定にあたっては、<b>必ず弁護士・社会保険労務士等の有資格専門家にご相談の上、ご自身の責任においてご判断ください。</b></li>
+                </ul>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 最下部フッター
     st.markdown("---")
     st.markdown(
-        "<div style='text-align: center; font-size: 12px; color: #6b7280;'>"
-        "© 2026 法令チェック ＆ AI添削システム | 本サービスは業務補助を目的とした情報提供ツールであり、法的鑑定・法的助言を提供するものではありません。<br>"
-        "Powered by e-Gov 法令API Version 2 & Google Gemini 3.8 Flash"
+        "<div style='text-align: center; font-size: 12px; color: #64748b; line-height: 1.7;'>"
+        "© 2026 e-Gov直結 法令整合性チェッカー | 本サービスは業務補助を目的とした情報提供ツールであり、法的鑑定・法的助言を提供するものではありません。<br>"
+        "Powered by デジタル庁 e-Gov 法令API Version 2 & Google Gemini 3.8 Flash"
         "</div>",
         unsafe_allow_html=True
     )
