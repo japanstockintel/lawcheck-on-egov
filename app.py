@@ -554,7 +554,7 @@ def main():
             unsafe_allow_html=True
         )
 
-        st.caption("※ 入力された文章はAIの追加学習には一切利用されません。")
+        st.caption("※ 本プログラムではGemini API 経由で処理を行っているため、入力された文章が AI の学習データとして二次利用・蓄積されることは一切ありません。")
         st.caption("Powered by e-Gov API v2 & Gemini 3.8 Flash")
 
     # --- 3. メイン画面ヘッダー ---
