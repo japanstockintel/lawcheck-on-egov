@@ -1,3 +1,4 @@
+import streamlit as st
 import json
 import os
 import re
@@ -556,6 +557,38 @@ def main():
 
         st.caption("※ 本プログラムではGemini API 経由で処理を行っているため、入力された文章が AI の学習データとして二次利用・蓄積されることは一切ありません。")
         st.caption("Powered by e-Gov API v2 & Gemini 3.8 Flash")
+
+        # --- AdSense 審査通過用 必須規約・ポリシーエリア ---
+        st.markdown("---")
+        st.markdown("#### 📜 法的表記・ポリシー")
+
+        with st.expander("🔒 プライバシーポリシー"):
+            st.markdown(
+                "**1. AI再学習への非利用**\n"
+                "当サイトは Google Gemini API 経由でテキスト処理を行っており、"
+                "入力された文章が AI の二次学習・モデル訓練に使用されることはありません。\n\n"
+                "**2. 広告・Cookie（クッキー）について**\n"
+                "当サイトでは、第三者配信事業者（Google AdSense 等）による広告を掲載する場合があります。"
+                "これらは Cookie を使用してアクセス情報に基づき広告を配信します。"
+            )
+
+        with st.expander("⚖️ 免責事項・利用規約"):
+            st.markdown(
+                "**1. 法的助言の非該当性**\n"
+                "当ツールの出力結果は AI による法令検索および照合の補助情報であり、"
+                "弁護士・社会保険労務士等の専門家による**法的助言（法的な鑑定・判断）ではありません**。\n\n"
+                "**2. 責任の制限**\n"
+                "当サイトの利用により生じたいかなる損害についても、運営者は一切の責任を負いかねます。"
+                "重要な法務判断・実務適用にあたっては、必ず管轄官庁または専門家へご相談ください。"
+            )
+
+        with st.expander("✉️ お問い合わせ・運営者"):
+            st.markdown(
+                "**運営**: 法令チェック ＆ AI添削システム運営事務局\n\n"
+                "当サービスに関するご意見・ご感想、不具合のご報告、権利侵害等に関するお問い合わせは、"
+                "以下の専用フォームよりご連絡ください。\n\n"
+                "[👉 お問い合わせフォームを開く（Google フォーム）](https://docs.google.com/forms/d/e/1FAIpQLSetMb5Gx8r4dDQdCMZtawTo24w_iMcL2YsR4-dAWr4G7__KGg/viewform?usp=sharing&ouid=102541426646418165137)\n\n"
+            )
 
     # --- 3. メイン画面ヘッダー ---
     st.markdown(
