@@ -1,4 +1,3 @@
-import streamlit as st
 import json
 import os
 import re
@@ -438,11 +437,11 @@ def audit_with_gemini(api_key: str, input_text: str, evidences: List[Dict[str, A
 
 {evidence_text}
 
-【最重要：断定・決めつけの禁止】
+【最重要：断定・決めつけの禁止（ガードレール）】
 1. 入力文章に特定の施行時期（例: 2026年12月等）や将来の制度改正が明記されている場合、提供された現行法令データや自身の知見に見当たらないからといって、直ちに「誤り」「誤記」「混同」と決めつけて断定することを厳禁とします。
 2. データで照合できない・未施行の場合は、以下のように明確かつ誠実に回答してください：
    - 「現行の e-Gov 法令API（本日時点）の確定データでは該当する条文が照合できませんでした。」
-   - 「ただし、各種行政機関からの個別通知、公的広報、または今後施行予定の政省令・改正法に基づく記述である可能性がありますので、公式発表をご確認ください。」
+   - 「ただし、行政機関（厚生労働省等）からの個別通知、公的広報、または今後施行予定の政省令・改正法に基づく記述である可能性がありますので、公式発表をご確認ください。」
 
 【出力要件】
 各法令・論点について、以下の項目で分かりやすくフィードバックを作成してください：
@@ -478,25 +477,118 @@ def audit_with_gemini(api_key: str, input_text: str, evidences: List[Dict[str, A
 # Streamlit Web UI メイン画面
 # =====================================================================
 def main():
-    # --- カスタムCSS（ボタンデザイン・文字切れ防止） ---
+    # --- 高級B2B SaaS風カスタムCSS（Streamlitデフォルトスタイルの刷新） ---
     st.markdown(
         """
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+        html, body, [class*="css"] {
+            font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .block-container {
+            padding-top: 1.5rem !important;
+            padding-bottom: 3rem !important;
+            max-width: 1120px !important;
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #172554 100%);
+            padding: 28px 32px;
+            border-radius: 16px;
+            color: white;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-title {
+            margin: 0 0 8px 0;
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-subtitle {
+            color: #93c5fd;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .hero-desc {
+            margin: 0;
+            font-size: 13.5px;
+            color: #cbd5e1;
+            line-height: 1.65;
+        }
+
+        .badge-pill {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            color: #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .excuse-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2563eb;
+            padding: 13px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #334155;
+            line-height: 1.6;
+            margin-top: 10px;
+            margin-bottom: 22px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
         div.stButton > button:first-child {
-            font-size: 16px !important;
+            font-size: 15px !important;
             font-weight: 600 !important;
-            padding: 10px 24px !important;
+            padding: 12px 28px !important;
             height: auto !important;
             white-space: nowrap !important;
-            border-radius: 8px !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        div.stButton > button:first-child:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+        }
+
+        .sidebar-status-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-    # --- 1. APIキーの自動取得（Secrets -> 環境変数 -> サイドバーフォールバック） ---
+    # --- 1. APIキーの自動取得 ---
     system_api_key = ""
     try:
         if "GEMINI_API_KEY" in st.secrets:
@@ -509,16 +601,54 @@ def main():
 
     effective_api_key = system_api_key
 
-    # --- 2. サイドバー設定 ---
+    # --- 2. お問い合わせフォームURLの設定 ---
+    contact_form_url = ""
+    try:
+        if "CONTACT_FORM_URL" in st.secrets:
+            contact_form_url = st.secrets["CONTACT_FORM_URL"]
+    except Exception:
+        pass
+    if not contact_form_url:
+        contact_form_url = os.environ.get(
+            "CONTACT_FORM_URL",
+            "https://docs.google.com/forms/d/e/1FAIpQLSetMb5Gx8r4dDQdCMZtawTo24w_iMcL2YsR4-dAWr4G7__KGg/viewform?usp=sharing&ouid=102541426646418165137"
+        )
+
+    # --- 3. メインヘッダー（最上部優先配置構造） ---
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                <span class="badge-pill">🏛️ デジタル庁 e-Gov 法令API v2 直結</span>
+                <span class="badge-pill">🛡️ ハルシネーション防止・事実峻別設計</span>
+            </div>
+            <h1 class="hero-title">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                </svg>
+                e-Gov直結 法令整合性チェッカー
+            </h1>
+            <div class="hero-subtitle">確定法令とAIの推論を明確に峻別する、次世代の法令検証エンジン。</div>
+            <p class="hero-desc">
+                法規制の内容を含む記事や社内規程等のドラフトを、国の公式法令データベースとリアルタイム照合。<br>
+                経過措置や政省令への委任まで見落とさずチェックし、そのまま使える安全な表現へブラッシュアップします。
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # --- 4. サイドバー設定（AdSense 必須4大要素完備構造） ---
     with st.sidebar:
-        st.markdown("### ⚖️ システムステータス")
+        st.markdown("### 🛡️ システムステータス")
 
         if system_api_key:
             st.markdown(
                 """
-                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px;">
+                <div class="sidebar-status-box">
                     <span style="color: #16a34a; font-weight: bold; font-size: 13px;">🟢 Online</span>
-                    <span style="font-size: 12px; color: #166534; margin-left: 6px;">e-Gov v2 & Gemini 正常稼働</span>
+                    <span style="font-size: 12px; color: #166534; margin-left: 8px;">e-Gov v2 & Gemini 正常稼働</span>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -536,7 +666,7 @@ def main():
                     effective_api_key = manual_key
 
         st.markdown("---")
-        st.markdown("### 💡 こんなシーンの確認に")
+        st.markdown("### 💡 クイックガイド")
         st.markdown(
             "- 📄 **社内規程・就業規則等**の法改正チェック\n"
             "- ✍️ **オウンドメディア・広報文等**の法令リスク監査\n"
@@ -544,40 +674,35 @@ def main():
         )
 
         st.markdown("---")
-        st.markdown("### 🏛️ システム構造（アーキテクチャ）")
-        st.markdown(
-            """
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; font-size: 12px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                <div style="font-weight: bold; color: #1e293b; margin-bottom: 2px;">🏛️ e-Gov API Version 2</div>
-                <div style="color: #64748b; margin-bottom: 8px; line-height: 1.4;">デジタル庁公式の最新条文XMLと常時同期</div>
-                <div style="border-top: 1px dashed #cbd5e1; padding-top: 6px; font-weight: bold; color: #1e293b; margin-bottom: 2px;">🔍 通称・略称の正規化</div>
-                <div style="color: #64748b; margin-bottom: 8px; line-height: 1.4;">「労基法」「パワハラ法」等の俗称から正式法令を特定</div>
-                <div style="border-top: 1px dashed #cbd5e1; padding-top: 6px; font-weight: bold; color: #1e293b; margin-bottom: 2px;">📜 ピンポイント条文特定</div>
-                <div style="color: #64748b; margin-bottom: 8px; line-height: 1.4;">本則・附則・政省令への委任を追跡</div>
-                <div style="border-top: 1px dashed #cbd5e1; padding-top: 6px; font-weight: bold; color: #1e293b; margin-bottom: 2px;">⚖️ 事実と解釈の峻別</div>
-                <div style="color: #64748b; line-height: 1.4;">国の確定法令とAIの推論を明確分離</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.markdown("### 📜 法的表記・概要（AdSense適合）")
 
-        st.caption("※ 本プログラムではGemini API 経由で処理を行っているため、入力された文章が AI の学習データとして二次利用・蓄積されることは一切ありません。")
-        st.caption("Powered by e-Gov API v2 & Gemini 3.8 Flash")
+        # ① ℹ️ 当サービスについて（About）
+        with st.expander("ℹ️ 当サービスについて（About）"):
+            st.markdown(
+                "**1. サービス提供の目的**\n"
+                "「e-Gov直結 法令整合性チェッカー」は、Web記事ドラフト、社内規程、契約書などの文章と、"
+                "デジタル庁が提供する「e-Gov 法令API Version 2」の公式現行条文データとの整合性をリアルタイムで照合・添削支援するリーガルテックWebアプリケーションです。\n\n"
+                "**2. e-Gov API直結の技術的意義**\n"
+                "一般的な生成AIの課題である「ハルシネーション（事実無根の回答生成）」を防止するため、AI独自の知識ではなく、"
+                "リアルタイム取得した国の公式法令データを「確定事実」として直接照合・エビデンス提示します。\n\n"
+                "**3. 主な活用シーン**\n"
+                "・就業規則や人事労務規程の法改正適合チェック\n"
+                "・オウンドメディア記事や広報文章の法的誤表記リスク監査\n"
+                "・契約書ドラフトや法務関連資料の初期確認"
+            )
 
-        # --- AdSense 審査通過用 必須規約・ポリシーエリア ---
-        st.markdown("---")
-        st.markdown("#### 📜 法的表記・ポリシー")
-
+        # ② 🔒 プライバシーポリシー
         with st.expander("🔒 プライバシーポリシー"):
             st.markdown(
-                "**1. AI再学習への非利用**\n"
-                "当サイトは Google Gemini API 経由でテキスト処理を行っており、"
-                "入力された文章が AI の二次学習・モデル訓練に使用されることはありません。\n\n"
-                "**2. 広告・Cookie（クッキー）について**\n"
-                "当サイトでは、第三者配信事業者（Google AdSense 等）による広告を掲載する場合があります。"
+                "**1. AIデータ取扱い・非利用**\n"
+                "※ 本プログラムではGemini API 経由で処理を行っているため、"
+                "入力された文章が AI の学習データとして二次利用・蓄積されることは一切ありません。\n\n"
+                "**2. 広告・Cookieについて**\n"
+                "当サイトでは、第三者配信事業者による広告を掲載する場合があります。"
                 "これらは Cookie を使用してアクセス情報に基づき広告を配信します。"
             )
 
+        # ③ ⚖️ 免責事項・利用規約
         with st.expander("⚖️ 免責事項・利用規約"):
             st.markdown(
                 "**1. 法的助言の非該当性**\n"
@@ -588,34 +713,22 @@ def main():
                 "重要な法務判断・実務適用にあたっては、必ず管轄官庁または専門家へご相談ください。"
             )
 
+        # ④ ✉️ お問い合わせ・運営者
+        form_link_md = f"[👉 お問い合わせフォームを開く（Google フォーム）]({contact_form_url})"
+
         with st.expander("✉️ お問い合わせ・運営者"):
             st.markdown(
-                "**運営**: 法令チェック ＆ AI添削システム運営事務局\n\n"
-                "当サービスに関するご意見・ご感想、不具合のご報告、権利侵害等に関するお問い合わせは、"
-                "以下の専用フォームよりご連絡ください。\n\n"
-                "[👉 お問い合わせフォームを開く（Google フォーム）](https://docs.google.com/forms/d/e/1FAIpQLSetMb5Gx8r4dDQdCMZtawTo24w_iMcL2YsR4-dAWr4G7__KGg/viewform?usp=sharing&ouid=102541426646418165137)\n\n"
+                f"**運営**: e-Gov直結 法令整合性チェッカー 運営事務局\n\n"
+                f"当サービスに関するご意見・ご感想、不具合のご報告、権利侵害等に関するお問い合わせは、"
+                f"以下の専用フォームよりご連絡ください。\n\n"
+                f"{form_link_md}\n\n"
             )
 
-    # --- 3. メイン画面ヘッダー ---
-    st.markdown(
-        """
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); padding: 24px 28px; border-radius: 14px; color: white; margin-bottom: 22px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);">
-            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                <span style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; letter-spacing: 0.5px;">🏛️ デジタル庁 e-Gov 法令API v2 直結</span>
-                <span style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; letter-spacing: 0.5px;">🛡️ ハルシネーション防止設計</span>
-            </div>
-            <h2 style="margin: 0 0 6px 0; color: white; font-size: 27px; font-weight: 700; letter-spacing: 0.5px;">⚖️ e-Gov直結 法令整合性チェッカー</h2>
-            <div style="color: #93c5fd; font-size: 15px; font-weight: 600; margin-bottom: 10px;">確定法令とAIの推論を峻別する、次世代の法令検証エンジン。</div>
-            <p style="margin: 0; font-size: 13.5px; opacity: 0.95; line-height: 1.65; color: #e2e8f0;">
-                法規制の内容を含む記事や社内規程等のドラフトを、国の公式法令データベースとリアルタイム照合。<br>
-                経過措置や政省令への委任まで見落とさずチェックし、そのまま使える安全な表現へブラッシュアップします。
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        st.markdown("---")
+        st.caption("※ 本プログラムではGemini API 経由で処理を行っているため、入力された文章が AI の学習データとして二次利用・蓄積されることは一切ありません。")
+        st.caption("Powered by e-Gov API v2 & Gemini 3.8 Flash")
 
-    # プリセット例文の選択肢
+    # --- 5. 例文選択 ＆ 入力フォーム ---
     sample_options = {
         "未払残業代・賃金請求権の消滅時効（労基法 本則 vs 経過措置）": (
             "M&Aの人事DDにおいて、労働基準法における賃金請求権の消滅時効は5年であるため、"
@@ -644,14 +757,20 @@ def main():
         placeholder="例: 労基法36条では時間外労働は何時間でも無制限に行ってよいとされている...",
         help="法適合性を確認したい文章や条項ドラフトを1〜2段落程度（500文字以内）で入力してください。"
     )
-    
-    # 💡 入力窓直下に注記を追加
-    st.caption(
-    "💡 **照合基準について**: 本ツールは「e-Gov 法令API Version 2」の仕様に基づき、"
-    "**本日時点で施行されている国の公式現行条文を基準にリアルタイム照合**を行います。"
-    "未施行の改正予定内容を含む記述内容は、APIの仕様上本文データが未反映のため「現行法と差分あり」として判定される場合があります。"
+
+    # 照合基準エクスキューズボックス（入力窓直下）
+    st.markdown(
+        """
+        <div class="excuse-box">
+            💡 <b>照合基準について</b>: 本ツールは「e-Gov 法令API Version 2」の仕様に基づき、
+            <b>本日時点で施行されている国の公式現行条文を基準にリアルタイム照合</b>を行います。
+            未施行の改正予定内容（例: 将来の施行日など）は、APIの仕様上本文データが未反映のため「現行法と差分あり」として判定される場合があります。
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-    
+
+
     # ボタンの横幅をゆったり確保（文字切れ防止）
     col_btn, _ = st.columns([1, 2])
     with col_btn:
