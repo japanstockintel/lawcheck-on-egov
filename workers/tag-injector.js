@@ -2,6 +2,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // sitemap.xml の動的生成
     if (url.pathname === "/sitemap.xml") {
       const sitemapNs = "http://" + "www.sitemaps.org/schemas/sitemap/0.9";
       const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -28,20 +29,30 @@ export default {
       return response;
     }
 
-    const GA4_MEASUREMENT_ID = "G-XXXXXXXXXX";
-    const ADSENSE_PUBLISHER_ID = "ca-pub-XXXXXXXXXXXXXXXX";
+    // ★ ご自身の実際の ID に書き換えてください
+    const GA4_MEASUREMENT_ID = "G-XXXXXXXXXX"; 
+    const ADSENSE_PUBLISHER_ID = "ca-pub-6258429009795456"; 
 
     const gaUrl = "https://" + "[suspicious link removed]" + GA4_MEASUREMENT_ID;
     const adsenseUrl = "https://" + "[suspicious link removed]" + ADSENSE_PUBLISHER_ID;
 
     return new HTMLRewriter()
+      // 1. 元の <title>Streamlit</title> を正しいタイトルに完全に上書き
+      .on("title", {
+        element(element) {
+          element.setInnerContent("e-Gov直結 法令整合性チェッカー | 確定法令とAIの推論を明確に峻別する次世代リーガルチェック");
+        }
+      })
+      // 2. SEO メタタグ & 解析・AdSense タグの挿入
       .on("head", {
         element(element) {
           element.append(`
-<!-- SEO Meta Tags -->
-<title>e-Gov直結 法令整合性チェッカー | 確定法令とAIの推論を明確に峻別する次世代リーガルチェック</title>
 <meta name="description" content="契約書・オウンドメディア・就業規則のテキストをデジタル庁e-Gov法令API v2とリアルタイム照合。確定法令とAI解釈を明確に峻別する無料法令監査ツール。" />
 <link rel="canonical" href="https://legalscale.net/" />
+<meta property="og:title" content="e-Gov直結 法令整合性チェッカー" />
+<meta property="og:description" content="国が提供するe-Gov法令API v2と直結し、法令整合性を高精度に監査・添削。" />
+<meta property="og:url" content="https://legalscale.net/" />
+<meta property="og:type" content="website" />
 <script async src="${gaUrl}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -53,7 +64,7 @@ export default {
           `, { html: true });
         }
       })
-      // React(div#root) の自動消去を回避するため body の末尾にテキストを配置
+      // 3. クローラー対策（クローラー向け静的テキスト）
       .on("body", {
         element(element) {
           element.append(`
