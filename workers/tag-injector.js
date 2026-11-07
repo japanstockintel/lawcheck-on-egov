@@ -91,24 +91,26 @@ Sitemap: ${sitemapLocation}
           `, { html: true });
         }
       })
-      // クローラー向けフォールバックテキスト
+      // 3. クローラー対策（コンパクト＆スタイリッシュなフッター）
       .on("body", {
         element(element) {
           element.append(`
-<div id="fallback-seo-content" style="padding: 20px; font-family: sans-serif; max-width: 900px; margin: 0 auto; color: #333; background: #fff;">
-  <h1>🏛️ e-Gov直結 法令整合性チェッカー</h1>
-  <p><strong>確定法令とAIの推論を明確に峻別する、次世代の法令検証エンジン。</strong></p>
-  <p>本サービスは、デジタル庁が提供する「e-Gov 法令API Version 2」の公式現行条文データと Google Gemini API を直結させ、契約書・就業規則・オウンドメディア記事等の法令適合性をリアルタイムで検証・監査する無料Webツールです。</p>
-  <h2>💡 主な特徴</h2>
-  <ul>
-    <li><strong>確定事実とAI解釈の厳密な峻別:</strong> 国の公式現行条文に基づく確定事実と、行政指針・判例・AIの補足解説を明確に分けて表示します。</li>
-    <li><strong>ハルシネーションの徹底排除:</strong> e-Gov API から取得した生の正規条文 XML を直接参照し、正確な照合を行います。</li>
-    <li><strong>AI非学習宣言:</strong> 入力された文章が AI の学習データとして二次利用・蓄積されることは一切ありません。</li>
-  </ul>
-  <h2>⚖️ 免責事項・利用規約</h2>
-  <p>本ツールは弁護士法第72条（非弁行為の禁止）を遵守し、機械的な照合・情報提供および業務補助を目的としています。弁護士・社会保険労務士等の専門家による法的鑑定・法的助言を提供するものではありません。</p>
-  <h2>✉️ 運営事務局</h2>
-  <p>運営: e-Gov直結 法令整合性チェッカー 運営事務局</p>
+<div id="fallback-seo-content" style="max-width: 900px; margin: 24px auto 12px; padding: 12px 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; line-height: 1.5; color: #64748b;">
+  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 8px;">
+    <span style="font-weight: 700; font-size: 12px; color: #1e293b;">🏛️ e-Gov直結 法令整合性チェッカー</span>
+    <span style="font-size: 10px; color: #94a3b8;">デジタル庁 e-Gov 法令API v2 直結</span>
+  </div>
+  <p style="margin: 0 0 6px 0; color: #475569;">
+    確定法令とAIの推論を明確に峻別する次世代の法令検証エンジン。契約書・就業規則・オウンドメディア記事等の法令適合性をリアルタイムで照合・監査します。
+  </p>
+  <div style="display: flex; gap: 12px; margin-bottom: 6px; font-size: 10px; color: #475569; font-weight: 500;">
+    <span>✓ ハルシネーション排除</span>
+    <span>✓ AI非学習宣言</span>
+    <span>✓ 弁護士法第72条準拠</span>
+  </div>
+  <p style="margin: 0; font-size: 10px; color: #94a3b8; border-top: 1px dashed #cbd5e1; padding-top: 6px;">
+    ※本ツールは機械的な照合・情報提供を目的とする業務補助ツールです。法的鑑定・法的助言を提供するものではありません。 ｜ 運営: e-Gov直結 法令整合性チェッカー 運営事務局
+  </p>
 </div>
           `, { html: true });
         }
