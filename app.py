@@ -674,7 +674,7 @@ def main():
         )
 
         st.markdown("---")
-        st.markdown("### 📜 法的表記・概要（AdSense適合）")
+        st.markdown("### 📜 法的表記・概要")
 
         # ① ℹ️ 当サービスについて（About）
         with st.expander("ℹ️ 当サービスについて（About）"):
