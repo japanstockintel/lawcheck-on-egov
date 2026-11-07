@@ -30,7 +30,7 @@ export default {
     }
 
     // ★ ご自身の実際の ID に書き換えてください
-    const GA4_MEASUREMENT_ID = "G-XXXXXXXXXX"; 
+    const GA4_MEASUREMENT_ID = "G-6ZLYBC7XPW"; 
     const ADSENSE_PUBLISHER_ID = "ca-pub-6258429009795456"; 
 
     const gaUrl = "https://" + "[suspicious link removed]" + GA4_MEASUREMENT_ID;
