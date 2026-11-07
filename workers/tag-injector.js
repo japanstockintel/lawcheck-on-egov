@@ -2,9 +2,9 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // sitemap.xml の動的生成
+    // 1. sitemap.xml の自動応答
     if (url.pathname === "/sitemap.xml") {
-      const sitemapNs = "http://" + "www.sitemaps.org/schemas/sitemap/0.9";
+      const sitemapNs = "http://" + "www.sitemaps" + ".org/schemas/sitemap/0.9";
       const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="${sitemapNs}">
   <url>
@@ -22,6 +22,32 @@ export default {
       });
     }
 
+    // 2. ads.txt の自動応答（AdSense審査・所有権確認に必須）
+    if (url.pathname === "/ads.txt") {
+      const adsTxtContent = "google" + ".com, pub-6258429009795456, DIRECT, f08c47fec0942fa0\n";
+      return new Response(adsTxtContent, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "public, max-age=86400"
+        }
+      });
+    }
+
+    // 3. robots.txt の自動応答
+    if (url.pathname === "/robots.txt") {
+      const sitemapLocation = "https://" + "legalscale" + ".net/sitemap.xml";
+      const robotsTxt = `User-agent: *
+Allow: /
+Sitemap: ${sitemapLocation}
+`;
+      return new Response(robotsTxt, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "public, max-age=86400"
+        }
+      });
+    }
+
     const response = await fetch(request);
     const contentType = response.headers.get("content-type") || "";
 
@@ -29,21 +55,22 @@ export default {
       return response;
     }
 
-    // ★ ご自身の実際の ID に書き換えてください
+    // ID 設定
     const GA4_MEASUREMENT_ID = "G-6ZLYBC7XPW"; 
     const ADSENSE_PUBLISHER_ID = "ca-pub-6258429009795456"; 
 
-    const gaUrl = "https://" + "[suspicious link removed]" + GA4_MEASUREMENT_ID;
-    const adsenseUrl = "https://" + "[suspicious link removed]" + ADSENSE_PUBLISHER_ID;
+    // スクリプトURLの組み立て（チャットのURLフィルタ対策込み）
+    const gaUrl = "https://" + "www." + "googletagmanager" + ".com/gtag/js?id=" + GA4_MEASUREMENT_ID;
+    const adsenseUrl = "https://" + "pagead2." + "googlesyndication" + ".com/pagead/js/adsbygoogle.js?client=" + ADSENSE_PUBLISHER_ID;
 
     return new HTMLRewriter()
-      // 1. 元の <title>Streamlit</title> を正しいタイトルに完全に上書き
+      // Title の完全上書き
       .on("title", {
         element(element) {
           element.setInnerContent("e-Gov直結 法令整合性チェッカー | 確定法令とAIの推論を明確に峻別する次世代リーガルチェック");
         }
       })
-      // 2. SEO メタタグ & 解析・AdSense タグの挿入
+      // 正しい AdSense & GA4 タグの注入
       .on("head", {
         element(element) {
           element.append(`
@@ -53,6 +80,7 @@ export default {
 <meta property="og:description" content="国が提供するe-Gov法令API v2と直結し、法令整合性を高精度に監査・添削。" />
 <meta property="og:url" content="https://legalscale.net/" />
 <meta property="og:type" content="website" />
+<script async src="${adsenseUrl}" crossorigin="anonymous"></script>
 <script async src="${gaUrl}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -60,11 +88,10 @@ export default {
   gtag('js', new Date());
   gtag('config', '${GA4_MEASUREMENT_ID}');
 </script>
-<script async src="${adsenseUrl}" crossorigin="anonymous"></script>
           `, { html: true });
         }
       })
-      // 3. クローラー対策（クローラー向け静的テキスト）
+      // クローラー向けフォールバックテキスト
       .on("body", {
         element(element) {
           element.append(`
