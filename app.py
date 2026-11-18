@@ -776,6 +776,131 @@ def main():
     with col_btn:
         execute_btn = st.button("🔍 法令チェックを実行", type="primary", use_container_width=True)
 
+    # =====================================================================
+    # AdSense対策：静的解説コンテンツ・FAQエリア（具体例＆判定イメージ強化版）
+    # =====================================================================
+    st.markdown("---")
+    st.markdown("""
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px; margin-top: 24px;">
+        <h2 style="color: #0f172a; font-size: 1.5rem; margin-bottom: 16px;">📚 当ツールの仕組みと法令チェック活用ガイド</h2>
+        <p style="color: #334155; line-height: 1.7;">
+            「e-Gov直結 法令整合性チェッカー」は、契約書ドラフト、就業規則、社内規定、Webメディアの法務記事などに含まれる法令記述を、<strong>デジタル庁の「e-Gov 法令API Version 2」</strong>から取得した公式現行条文データとリアルタイムで照合・添削するWebサービスです。
+        </p>
+    
+        <h3 style="color: #1e3a8a; font-size: 1.2rem; margin-top: 24px; margin-bottom: 12px;">⚖️ なぜ既存の生成AI単体では法令チェックに不十分なのか？</h3>
+        <p style="color: #334155; line-height: 1.7;">
+            一般的な生成AI（LLM）は過去の学習データに基づいて文章を生成するため、<strong>存在しない条番号を捏造する「ハルシネーション（幻覚）」</strong>が発生したり、未施行の改正法や旧条文を現在の法律として回答してしまうリスクがあります。<br>
+            本システムでは、AI自身の記憶に頼らず、必ず国の公式法令データベース（e-Gov API）から<strong>生の条文XMLデータを直接取得（RAG構造）</strong>した上で検証を行うため、客観的で正確なエビデンスを提示できます。
+        </p>
+
+        <!-- 💡 ユーザーの不安解消とツールの提供価値を中心としたガイドエリア -->
+        <h2 style="color: #0f172a; font-size: 1.4rem; margin-top: 36px; margin-bottom: 12px;">🔍 法令の適合性に不安をお持ちの方へ：具体活用イメージ</h2>
+        <p style="color: #334155; line-height: 1.8; background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 14px 18px; border-radius: 4px; margin-bottom: 24px;">
+            自社で作成した契約書案、就業規則、あるいはWeb上の法務解説記事について、<strong>「旧法のまま放置されていないか」「最新の法改正に対応できているか」といった不安や懸念</strong>をお持ちではありませんか？<br>
+            本ツールに文章を入力して実行することで、公式現行条文に基づいた正確な検証が即座に行えます。<strong>「修正が必要かどうかの確実な判定（OK/NG）」</strong>と、<strong>「修正が必要な場合の具体案・検討材料（エビデンス）」</strong>として、社内確認やリーガルチェックの現場でそのままご活用いただけます。
+        </p>
+
+        <h3 style="color: #0f172a; font-size: 1.15rem; margin-bottom: 16px;">💡 主な事例と判定・出力イメージ一覧</h3>
+
+        <!-- ① 人事・労務担当者の悩み -->
+        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h4 style="color: #1e40af; margin-top: 0; margin-bottom: 12px; font-size: 1.1rem;">👔 1. 人事・労務・総務担当者（就業規則・労使協定のチェック）</h4>
+        
+            <!-- 例1-1 -->
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;">
+                <strong style="color: #0f172a;">● 労働基準法第36条（36協定の上限規制）のチェック</strong>
+                <div style="margin-top: 6px; color: #334155; font-size: 0.95rem;">
+                    ✍️ <strong>【入力文の例】</strong>：「特別延長条項を適用し、業務上必要な場合は時間の限度なく残業を行わせることができる。」<br>
+                    🚨 <strong>【判定・出力イメージ】</strong>：<span style="color: #dc2626; font-weight: bold;">❌【不適合・要修正】</span> 現行の労基法第36条第5項・第6項（年720時間、複数月平均80時間以内等の罰則付き上限規制）に違反。「罰則適用リスクあり」と指摘され、e-Gov公式条文に基づいた上限表記の修正案が提示されます。
+                </div>
+            </div>
+        
+            <!-- 例1-2 -->
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;">
+                <strong style="color: #0f172a;">● 賃金請求権の消滅時効（労基法第115条・附則第143条）のチェック</strong>
+                <div style="margin-top: 6px; color: #334155; font-size: 0.95rem;">
+                    ✍️ <strong>【入力文の例】</strong>：「未払い賃金の請求権は、権利を行使できる時から2年間行使しない場合、時効により消滅する。」<br>
+                    ⚠️ <strong>【判定・出力イメージ】</strong>：<span style="color: #d97706; font-weight: bold;">⚠️【要確認・修正推奨】</span> 本則「5年」、当分の間の経過措置「3年」（附則第143条）と一致していません。旧法の「2年」のまま放置されているため、「3年間」への修正案が提示されます。
+                </div>
+            </div>
+
+            <!-- 例1-3 -->
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px;">
+                <strong style="color: #0f172a;">● フリーランス事業者間取引適正化等法（2024年施行新法）のチェック</strong>
+                <div style="margin-top: 6px; color: #334155; font-size: 0.95rem;">
+                    ✍️ <strong>【入力文の例】</strong>：「業務委託料は、成果物の納品後に会社の検収処理が完了した翌々月末に支払う。」<br>
+                    💡 <strong>【判定・出力イメージ】</strong>：<span style="color: #2563eb; font-weight: bold;">💡【適合性検証・注意喚起】</span> 受領日から60日以内の支払期日設定義務（第4条）に対し、検収完了起算では60日超過のリスクがある旨を指摘し、条文照合結果を出力します。
+                </div>
+            </div>
+        </div>
+
+        <!-- ② 契約・法務担当者の悩み -->
+        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h4 style="color: #065f46; margin-top: 0; margin-bottom: 12px; font-size: 1.1rem;">📜 2. 法務・起業家・事業責任者（契約書ドラフト・規約のチェック）</h4>
+        
+            <!-- 例2-1 -->
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;">
+                <strong style="color: #0f172a;">● 民法（債権法改正）に伴う法定利率・損害賠償条項のチェック</strong>
+                <div style="margin-top: 6px; color: #334155; font-size: 0.95rem;">
+                    ✍️ <strong>【入力文の例】</strong>：「支払が遅延した遅延損害金は、年5%の割合によるものとする。」<br>
+                    ⚠️ <strong>【判定・出力イメージ】</strong>：<span style="color: #d97706; font-weight: bold;">⚠️【要検討・情報提供】</span> 改正民法第404条（法定利率年3%・変動制）の条文と照合。当事者間の合意による特約（約定利率）として意図したものか、旧法基準の誤記述かの検討材料を提示します。
+                </div>
+            </div>
+
+            <!-- 例2-2 -->
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px;">
+                <strong style="color: #0f172a;">● 不正競争防止法第2条第6項（営業秘密の3要件）のチェック</strong>
+                <div style="margin-top: 6px; color: #334155; font-size: 0.95rem;">
+                    ✍️ <strong>【入力文の例】</strong>：「乙は、甲から開示された一切の機密情報を秘密として保持しなければならない。」<br>
+                    💡 <strong>【判定・出力イメージ】</strong>：<span style="color: #2563eb; font-weight: bold;">💡【補強案の提示】</span> 単に「機密情報」と書くだけでは法的保護を受けるための「秘密管理性・有用性・非公知性」を満たさない可能性があります。要件を満たす定義の書き分け案を提示します。
+                </div>
+            </div>
+        </div>
+
+        <!-- ③ Webマーケター・ライターの悩み -->
+        <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h4 style="color: #92400e; margin-top: 0; margin-bottom: 12px; font-size: 1.1rem;">✍️ 3. Webマーケター・ライター・広報（記事・広告表示のチェック）</h4>
+        
+            <!-- 例3-1 -->
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;">
+                <strong style="color: #0f172a;">● 景品表示法（ステマ規制・No.1表示）のチェック</strong>
+                <div style="margin-top: 6px; color: #334155; font-size: 0.95rem;">
+                    ✍️ <strong>【入力文の例】</strong>：「業界No.1の導入実績を誇る最強の契約書チェッカーツールです！」<br>
+                    🚨 <strong>【判定・出力イメージ】</strong>：<span style="color: #dc2626; font-weight: bold;">❌【不当表示リスクあり】</span> 景表法第5条（優良誤認・有利誤認）に基づき、客観的な調査出典・調査期間の注記がない「No.1表示」は不適合リスクがあると指摘します。
+                </div>
+            </div>
+
+            <!-- 例3-2 -->
+            <div style="background-color: #f1f5f9; padding: 12px 16px; border-radius: 6px;">
+                <strong style="color: #0f172a;">● 薬機法（第66条・誇大広告の禁止）のチェック</strong>
+                <div style="margin-top: 6px; color: #334155; font-size: 0.95rem;">
+                    ✍️ <strong>【入力文の例】</strong>：「このサプリメントを飲むだけで、どんな深いシワも完全に消滅します。」<br>
+                    🚨 <strong>【判定・出力イメージ】</strong>：<span style="color: #dc2626; font-weight: bold;">❌【不適合・要修正】</span> 薬機法第66条（誇大広告）および承認効能の範囲逸脱を指摘。ガイドラインに適合した安心できる表現への修正候補を出力します。
+                </div>
+            </div>
+        </div>
+
+        <!-- ❓ FAQエリア -->
+        <h2 style="color: #0f172a; font-size: 1.4rem; margin-top: 32px; margin-bottom: 16px;">❓ よくある質問（FAQ）</h2>
+    
+        <div style="margin-bottom: 16px;">
+            <h4 style="color: #1e3a8a; font-size: 1.05rem; margin-bottom: 6px;">Q1. どのような文章を入力できますか？</h4>
+            <p style="color: #475569; margin-top: 0;">A. 契約書の条文案、就業規則の改定案、コンプライアンス研修テキスト、オウンドメディアの法務解説記事など自由に入力いただけます。「労基法」「薬機法」などの略称も自動的に公式名称へ変換されます。</p>
+        </div>
+    
+        <div style="margin-bottom: 16px;">
+            <h4 style="color: #1e3a8a; font-size: 1.05rem; margin-bottom: 6px;">Q2. 弁護士法第72条（非弁行為の禁止）との関係はどうなっていますか？</h4>
+            <p style="color: #475569; margin-top: 0;">A. 本サービスは、デジタル庁公表の現行条文データとの機械的な一致照合および一般的な情報提供を行うシステムであり、個別具体的な法的事件に関する法律鑑定・法的助言（弁護士法第72条に規定される非弁行為）を行うものではありません。具体的な法的判断については必ず弁護士等の専門家にご相談ください。</p>
+        </div>
+    
+        <div style="margin-bottom: 16px;">
+            <h4 style="color: #1e3a8a; font-size: 1.05rem; margin-bottom: 6px;">Q3. 入力した文章や契約書案がAIの学習に使用されることはありますか？</h4>
+            <p style="color: #475569; margin-top: 0;">A. いいえ、ありません。本システムは Google Gemini API の有料・企業向け基盤を通じて通信を行っているため、ユーザーが送信した文章や社内規程のテキストが Google 側の AI モデルの二次学習・蓄積に使用されることは一切ありません。安心してご利用いただけます。</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
     if execute_btn:
         if not effective_api_key:
             st.error("⚠️ Gemini API キーが設定されていません。サイドバーからキーを入力してください。")
