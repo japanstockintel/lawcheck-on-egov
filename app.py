@@ -677,7 +677,7 @@ def main():
         st.markdown("### 📜 法的表記・概要")
 
         # ① ℹ️ 当サービスについて（About）
-        with st.expander("ℹ️ 当サービスについて（About）"):
+        with st.expander("ℹ️ 当サービスについて（About）", expanded=True):
             st.markdown(
                 "**1. サービス提供の目的**\n"
                 "「e-Gov直結 法令整合性チェッカー」は、Web記事ドラフト、社内規程、契約書などの文章と、"
@@ -692,7 +692,7 @@ def main():
             )
 
         # ② 🔒 プライバシーポリシー
-        with st.expander("🔒 プライバシーポリシー"):
+        with st.expander("🔒 プライバシーポリシー", expanded=True):
             st.markdown(
                 "**1. AIデータ取扱い・非利用**\n"
                 "※ 本プログラムではGemini API 経由で処理を行っているため、"
@@ -703,7 +703,7 @@ def main():
             )
 
         # ③ ⚖️ 免責事項・利用規約
-        with st.expander("⚖️ 免責事項・利用規約"):
+        with st.expander("⚖️ 免責事項・利用規約", expanded=True):
             st.markdown(
                 "**1. 法的助言の非該当性**\n"
                 "当ツールの出力結果は AI による法令検索および照合の補助情報であり、"
@@ -716,7 +716,7 @@ def main():
         # ④ ✉️ お問い合わせ・運営者
         form_link_md = f"[👉 お問い合わせフォームを開く（Google フォーム）]({contact_form_url})"
 
-        with st.expander("✉️ お問い合わせ・運営者"):
+        with st.expander("✉️ お問い合わせ・運営者", expanded=True):
             st.markdown(
                 f"**運営**: e-Gov直結 法令整合性チェッカー 運営事務局\n\n"
                 f"当サービスに関するご意見・ご感想、不具合のご報告、権利侵害等に関するお問い合わせは、"
